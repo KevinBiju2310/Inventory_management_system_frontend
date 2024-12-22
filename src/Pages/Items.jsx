@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Layout from "../Components/Layout";
 import axiosInstance from "../services/axiosInstance";
 import ConfirmationModal from "../Components/ConfirmationModal";
+import { Search } from "lucide-react";
 
 const Items = () => {
   const [itemDetails, setItemDetails] = useState({
@@ -13,6 +14,7 @@ const Items = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [items, setItems] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [itemToEdit, setItemToEdit] = useState(null);
@@ -75,15 +77,12 @@ const Items = () => {
 
   const handleUpdate = async () => {
     try {
-      const response = await axiosInstance.put(
-        `/edititem/${itemToEdit._id}`,
-        {
-          name: itemToEdit.name,
-          description: itemToEdit.description,
-          quantity: itemToEdit.quantity,
-          price: itemToEdit.price,
-        }
-      );
+      const response = await axiosInstance.put(`/edititem/${itemToEdit._id}`, {
+        name: itemToEdit.name,
+        description: itemToEdit.description,
+        quantity: itemToEdit.quantity,
+        price: itemToEdit.price,
+      });
       if (response.status === 200) {
         setItems((prevItems) =>
           prevItems.map((item) =>
@@ -114,6 +113,14 @@ const Items = () => {
     setItemToDelete(null);
   };
 
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
+
+  const filteredItems = items.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <Layout>
       <div className="flex items-center justify-between mb-4">
@@ -126,57 +133,91 @@ const Items = () => {
         </button>
       </div>
 
-      {/* Table to display items */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full table-auto border-collapse border border-gray-300">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-4 py-2 text-left font-medium text-gray-700">
-                Index
-              </th>
-              <th className="border px-4 py-2 text-left font-medium text-gray-700">
-                Name
-              </th>
-              <th className="border px-4 py-2 text-left font-medium text-gray-700">
-                Quantity
-              </th>
-              <th className="border px-4 py-2 text-left font-medium text-gray-700">
-                Price
-              </th>
-              <th className="border px-4 py-2 text-left font-medium text-gray-700">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr
-                key={item._id}
-                className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-              >
-                <td className="border px-4 py-2">{index + 1}</td>
-                <td className="border px-4 py-2">{item.name}</td>
-                <td className="border px-4 py-2">{item.quantity}</td>
-                <td className="border px-4 py-2">${item.price}</td>
-                <td className="border px-4 py-2">
-                  <button
-                    onClick={() => handleEditItem(item)}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 mr-2"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => openConfirmModal(item._id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="relative max-w-2xl mx-auto mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search items by name..."
+            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition-all duration-200 ease-in-out hover:border-gray-300 text-gray-800 placeholder-gray-400"
+          />
+          {searchTerm && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xl font-bold"
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Table to display items */}
+      {filteredItems.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="text-gray-500 text-lg mb-2">No items found</div>
+          {searchTerm && (
+            <div className="text-gray-400 text-sm">
+              No results found
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-auto border-collapse border border-gray-300">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-4 py-2 text-left font-medium text-gray-700">
+                  Index
+                </th>
+                <th className="border px-4 py-2 text-left font-medium text-gray-700">
+                  Name
+                </th>
+                <th className="border px-4 py-2 text-left font-medium text-gray-700">
+                  Quantity
+                </th>
+                <th className="border px-4 py-2 text-left font-medium text-gray-700">
+                  Price
+                </th>
+                <th className="border px-4 py-2 text-left font-medium text-gray-700">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredItems.map((item, index) => (
+                <tr
+                  key={item._id}
+                  className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
+                  <td className="border px-4 py-2">{index + 1}</td>
+                  <td className="border px-4 py-2">{item.name}</td>
+                  <td className="border px-4 py-2">{item.quantity}</td>
+                  <td className="border px-4 py-2">${item.price}</td>
+                  <td className="border px-4 py-2">
+                    <button
+                      onClick={() => handleEditItem(item)}
+                      className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 mr-2"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => openConfirmModal(item._id)}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Modal for adding items */}
       {isModalOpen && (
