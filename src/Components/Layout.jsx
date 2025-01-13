@@ -1,7 +1,16 @@
 /* eslint-disable react/prop-types */
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, Home, Users, Box, ShoppingCart, LogOut } from "lucide-react";
+import {
+  Menu,
+  X,
+  // Home,
+  Users,
+  Box,
+  ShoppingCart,
+  LogOut,
+  BarChart,
+} from "lucide-react";
 import axiosInstance from "../services/axiosInstance";
 import { useDispatch } from "react-redux";
 import { logOut } from "../Redux/userSlice";
@@ -11,10 +20,11 @@ const Layout = ({ children }) => {
   const dispatch = useDispatch();
 
   const navItems = [
-    { icon: Home, label: "Dashboard", to: "/dashboard" },
+    // { icon: Home, label: "Dashboard", to: "/dashboard" },
     { icon: Box, label: "Items", to: "/items" },
     { icon: Users, label: "Customers", to: "/customers" },
     { icon: ShoppingCart, label: "Sales", to: "/sales" },
+    { icon: BarChart, label: "Reports", to: "/reports" },
   ];
 
   const handleLogout = async () => {

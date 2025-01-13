@@ -33,7 +33,7 @@ const SignIn = () => {
       });
       if (response.status == 200) {
         dispatch(setUser(response.data.user));
-        navigate("/dashboard");
+        navigate("/items");
       }
     } catch (error) {
       if (error.response) {

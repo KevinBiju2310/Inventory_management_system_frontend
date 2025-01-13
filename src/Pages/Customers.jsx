@@ -19,7 +19,7 @@ const Customers = () => {
       }
     };
     fetchCustomers();
-  }, [customers]);
+  }, []);
 
   const handleAddCustomers = () => {
     setIsModalOpen(true);
@@ -43,6 +43,10 @@ const Customers = () => {
       );
       if (response.status == 201) {
         console.log(response.data.message);
+        setCustomers((prevCustomers) => [
+          ...prevCustomers,
+          response.data.newCustomer,
+        ]);
       }
     } catch (error) {
       console.error("Error Occured: ", error);

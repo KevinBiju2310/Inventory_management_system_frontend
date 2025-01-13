@@ -31,7 +31,7 @@ const Items = () => {
       }
     };
     fetchItems();
-  }, [items]);
+  }, []);
 
   const handleAddItem = () => {
     setIsModalOpen(true);
@@ -63,6 +63,7 @@ const Items = () => {
       const response = await axiosInstance.post("/additem", itemDetails);
       if (response.status == 201) {
         console.log("created Successfully");
+        setItems((prevItems) => [...prevItems, response.data.newItem]);
       }
     } catch (error) {
       console.error("Error occurred", error);
@@ -161,9 +162,7 @@ const Items = () => {
         <div className="text-center py-8">
           <div className="text-gray-500 text-lg mb-2">No items found</div>
           {searchTerm && (
-            <div className="text-gray-400 text-sm">
-              No results found
-            </div>
+            <div className="text-gray-400 text-sm">No results found</div>
           )}
         </div>
       ) : (
@@ -197,7 +196,7 @@ const Items = () => {
                   <td className="border px-4 py-2">{index + 1}</td>
                   <td className="border px-4 py-2">{item.name}</td>
                   <td className="border px-4 py-2">{item.quantity}</td>
-                  <td className="border px-4 py-2">${item.price}</td>
+                  <td className="border px-4 py-2">INR {item.price}</td>
                   <td className="border px-4 py-2">
                     <button
                       onClick={() => handleEditItem(item)}
