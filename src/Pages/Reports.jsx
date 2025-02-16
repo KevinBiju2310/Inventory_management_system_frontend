@@ -14,6 +14,8 @@ const Reports = () => {
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState("");
 
+  const today = new Date().toISOString().split("T")[0];
+
   useEffect(() => {
     setData([]);
     const fetchCustomers = async () => {
@@ -30,7 +32,6 @@ const Reports = () => {
       const response = await axiosInstance.get(
         `/reports/${reportType}?startDate=${startDate}&endDate=${endDate}&customerName=${selectedCustomer}`
       );
-      console.log(response.data[reportType]);
       setData(response.data[reportType]);
     } catch (error) {
       console.error("Error Occurred:", error);
@@ -52,7 +53,7 @@ const Reports = () => {
           itemIndex === 0 ? index + 1 : "",
           itemIndex === 0 ? new Date(sale.date).toLocaleDateString("in") : "",
           itemIndex === 0 ? sale.customer.name : "",
-          item.item.name,
+          item.itemId.name,
           item.quantity,
           `INR ${item.price.toFixed(2)}`,
           `INR ${(item.quantity * item.price).toFixed(2)}`,
@@ -82,7 +83,7 @@ const Reports = () => {
         entry.items.map((item, itemIndex) => [
           itemIndex === 0 ? index + 1 : "",
           itemIndex === 0 ? new Date(entry.date).toLocaleDateString("in") : "",
-          item.item.name,
+          item.itemId.name,
           item.quantity,
           `INR ${item.price.toFixed(2)}`,
           `INR ${(item.quantity * item.price).toFixed(2)}`,
@@ -140,7 +141,7 @@ const Reports = () => {
                 ? new Date(sale.date).toLocaleDateString("in")
                 : "",
               itemIndex === 0 ? sale.customer.name : "",
-              item.item.name,
+              item.itemId.name,
               item.quantity,
               item.price.toFixed(2),
               (item.quantity * item.price).toFixed(2),
@@ -153,7 +154,7 @@ const Reports = () => {
               itemIndex === 0
                 ? new Date(entry.date).toLocaleDateString("in")
                 : "",
-              item.item.name,
+              item.itemId.name,
               item.quantity,
               item.price.toFixed(2),
               (item.quantity * item.price).toFixed(2),
@@ -192,39 +193,41 @@ const Reports = () => {
       </div>
 
       <div className="p-4">
-        <div className="mb-4">
-          <select
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value)}
-            className="p-2 border rounded mr-2"
-          >
-            <option value="sales">Sales Report</option>
-            <option value="customerLedger">Customer Ledger</option>
-          </select>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-grow">
+            <select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              className="p-2 border rounded w-full sm:w-auto"
+            >
+              <option value="sales">Sales Report</option>
+              <option value="customerLedger">Customer Ledger</option>
+            </select>
 
-          {reportType === "sales" && (
-            <>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="p-2 border rounded mr-2"
-              />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="p-2 border rounded mr-2"
-              />
-            </>
-          )}
+            {reportType === "sales" && (
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  max={today}
+                  className="p-2 border rounded w-full sm:w-auto"
+                />
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  max={today}
+                  className="p-2 border rounded w-full sm:w-auto"
+                />
+              </div>
+            )}
 
-          {reportType === "customerLedger" && (
-            <div>
+            {reportType === "customerLedger" && (
               <select
                 value={selectedCustomer}
                 onChange={(e) => setSelectedCustomer(e.target.value)}
-                className="p-2 border rounded mr-2"
+                className="p-2 border rounded w-full sm:w-auto"
               >
                 <option value="" disabled>
                   -- Select a Customer --
@@ -235,12 +238,12 @@ const Reports = () => {
                   </option>
                 ))}
               </select>
-            </div>
-          )}
+            )}
+          </div>
 
           <button
             onClick={fetchReport}
-            className="bg-blue-500 text-white px-4 py-2 rounded"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition-colors w-full sm:w-auto"
             disabled={
               (reportType === "sales" && (!startDate || !endDate)) ||
               (reportType === "customerLedger" && !selectedCustomer)
@@ -293,7 +296,7 @@ const Reports = () => {
                       </>
                     )}
                     <td className="border border-gray-300 px-4 py-2">
-                      {item.item.name}
+                      {item.itemId.name}
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
                       {item.quantity}
@@ -318,7 +321,7 @@ const Reports = () => {
             </tbody>
           </table>
         )}
-        {console.log(data)}
+        {/* {console.log(data)} */}
         {reportType === "customerLedger" && data.length > 0 && (
           <>
             {/* <h3 className="font-bold p-2">Customer: {selectedCustomer}</h3> */}
@@ -360,7 +363,7 @@ const Reports = () => {
                         </>
                       )}
                       <td className="border border-gray-300 px-4 py-2">
-                        {item.item.name}
+                        {item.itemId.name}
                       </td>
                       <td className="border border-gray-300 px-4 py-2">
                         {item.quantity}

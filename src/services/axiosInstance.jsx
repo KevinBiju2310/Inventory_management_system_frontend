@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "https://inventory-management-system-backend-gys0.onrender.com",
+  // baseURL: "https://inventory-management-system-backend-gys0.onrender.com",
+  baseURL: "http://localhost:5000",
   withCredentials: true,
 });
 

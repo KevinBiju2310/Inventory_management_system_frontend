@@ -1,37 +1,15 @@
 import Layout from "../Components/Layout";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axiosInstance from "../services/axiosInstance";
+import Pagination from "../Components/Pagination";
 
 const Sales = () => {
-  const [customers, setCustomers] = useState([]);
-  const [items, setItems] = useState([]);
   const [sales, setSales] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [cart, setCart] = useState([]);
-  const [paymentType, setPaymentType] = useState("cash");
-
-  const fetchCustomers = async () => {
-    try {
-      const response = await axiosInstance.get("/customers");
-      if (response.status === 200) {
-        setCustomers(response.data.customers);
-      }
-    } catch (error) {
-      console.error("Error occurred:", error);
-    }
-  };
-
-  const fetchItems = async () => {
-    try {
-      const response = await axiosInstance.get("/items");
-      if (response.status === 200) {
-        setItems(response.data.items);
-      }
-    } catch (error) {
-      console.error("Error occurred:", error);
-    }
-  };
+  const [currentPage, setCurrentPage] = useState(1);
+  const [salesPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
 
   const fetchSales = async () => {
     try {
@@ -45,44 +23,28 @@ const Sales = () => {
   };
 
   useEffect(() => {
-    fetchCustomers();
-    fetchItems();
     fetchSales();
   }, []);
 
-  const handleAddToCart = (itemId, quantity) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find(
-        (cartItem) => cartItem.item === itemId
-      );
-      if (existingItem) {
-        return prevCart.map((cartItem) =>
-          cartItem.item === itemId
-            ? { ...cartItem, quantity: cartItem.quantity + quantity }
-            : cartItem
-        );
-      }
-      return [...prevCart, { item: itemId, quantity }];
-    });
-  };
+  const filteredSales = sales.filter((sale) => {
+    const customerName = sale.customer
+      ? sale.customer.name.toLowerCase()
+      : "walk-in customer";
+    const items = sale.items
+      .map((item) => item.itemId?.name?.toLowerCase() || "unknown item")
+      .join(" ");
+    return (
+      customerName.includes(searchTerm.toLowerCase()) ||
+      items.includes(searchTerm.toLowerCase())
+    );
+  });
 
-  const handleSubmit = async () => {
-    try {
-      const saleData = {
-        customer: selectedCustomer,
-        items: cart,
-        paymentType,
-      };
-      const response = await axiosInstance.post("/sales", saleData);
-      if (response.status === 201) {
-        // setSales((prevSales) => [response.data.sale, ...prevSales]);
-        setCart([]);
-        setSelectedCustomer("");
-        setIsModalOpen(false);
-      }
-    } catch (err) {
-      console.error("Error occured: ", err);
-    }
+  const indexOfLastSale = currentPage * salesPerPage;
+  const indexOfFirstSale = indexOfLastSale - salesPerPage;
+  const currentSales = filteredSales.slice(indexOfFirstSale, indexOfLastSale);
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
   };
 
   return (
@@ -90,15 +52,25 @@ const Sales = () => {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Sales</h1>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => navigate("/purchase")}
           className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
         >
           Purchase
         </button>
       </div>
 
+      <div className="mb-4 flex items-center gap-4">
+        <input
+          type="text"
+          placeholder="Search by customer or item name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
+
       <h2 className="text-xl font-bold mt-6 mb-4">Sales List</h2>
-      {sales.length === 0 ? (
+      {currentSales.length === 0 ? (
         <p>No sales available</p>
       ) : (
         <div className="overflow-x-auto">
@@ -116,10 +88,10 @@ const Sales = () => {
               </tr>
             </thead>
             <tbody>
-              {sales.map((sale, index) => (
+              {currentSales.map((sale, index) => (
                 <tr key={sale._id}>
                   <td className="border border-gray-300 px-4 py-2">
-                    {index + 1}
+                    {indexOfFirstSale + index + 1}
                   </td>
                   <td className="border border-gray-300 px-4 py-2">
                     {sale.customer ? sale.customer.name : "Walk-in Customer"}
@@ -128,8 +100,8 @@ const Sales = () => {
                     <ul>
                       {sale.items.map((item, index) => (
                         <li key={index}>
-                          {item.item?.name || "Unknown Item"} x {item.quantity}{" "}
-                          (INR {item.price})
+                          {item.itemId?.name || "Unknown Item"} x{" "}
+                          {item.quantity} (INR {item.price})
                         </li>
                       ))}
                     </ul>
@@ -147,83 +119,11 @@ const Sales = () => {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {isModalOpen && (
-        <div className="modal fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h2 className="text-xl font-bold mb-4">Create Sale</h2>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium">Customer</label>
-              <select
-                value={selectedCustomer}
-                onChange={(e) => setSelectedCustomer(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-              >
-                <option value="">Walk-in Customer</option>
-                {customers.map((customer) => (
-                  <option key={customer._id} value={customer._id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium">Items</label>
-              {items.map((item) => (
-                <div
-                  key={item._id}
-                  className="flex items-center justify-between mb-2"
-                >
-                  <span>{item.name}</span>
-                  <div>
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="Qty"
-                      className="w-16 p-1 border border-gray-300 rounded mr-2"
-                      onChange={(e) => {
-                        const quantity = parseInt(e.target.value, 10);
-                        if (quantity > 0) {
-                          handleAddToCart(item._id, quantity);
-                        }
-                      }}
-                    />
-                    <span className="text-sm text-gray-500">${item.price}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium">Payment Type</label>
-              <select
-                value={paymentType}
-                onChange={(e) => setPaymentType(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-              >
-                <option value="cash">Cash</option>
-              </select>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="bg-gray-500 text-white px-4 py-2 rounded mr-2 hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              >
-                Submit
-              </button>
-            </div>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredSales.length / salesPerPage)}
+            onPageChange={handlePageChange}
+          />
         </div>
       )}
     </Layout>

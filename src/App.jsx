@@ -7,10 +7,14 @@ import Customers from "./Pages/Customers";
 import Items from "./Pages/Items";
 import Sales from "./Pages/Sales";
 import Reports from "./Pages/Reports";
+import Purchase from "./Pages/Purchase";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const App = () => {
   return (
     <Router>
+      <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
         {/* Define the routes */}
         <Route path="/" element={<SignIn />} />
@@ -19,6 +23,7 @@ const App = () => {
           {/* <Route path="/dashboard" element={<Dashboard />} /> */}
           <Route path="/items" element={<Items />} />
           <Route path="/customers" element={<Customers />} />
+          <Route path="/purchase" element={<Purchase />} />
           <Route path="/sales" element={<Sales />} />
           <Route path="/reports" element={<Reports />} />
         </Route>
