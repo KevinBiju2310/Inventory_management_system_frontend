@@ -16,11 +16,9 @@ const App = () => {
     <Router>
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
-        {/* Define the routes */}
         <Route path="/" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route element={<ProtectedRoute />}>
-          {/* <Route path="/dashboard" element={<Dashboard />} /> */}
           <Route path="/items" element={<Items />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/purchase" element={<Purchase />} />

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import Layout from "../Components/Layout";
 import axiosInstance from "../services/axiosInstance";
+import Pagination from "../Components/Pagination";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Customers = () => {
   const [customerDetails, setCustomerDetails] = useState({
@@ -10,6 +13,8 @@ const Customers = () => {
   });
   const [customers, setCustomers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const customersPerPage = 10;
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -34,9 +39,30 @@ const Customers = () => {
     setCustomerDetails({ ...customerDetails, [name]: value });
   };
 
+  const indexOfLastCustomer = currentPage * customersPerPage;
+  const indexOfFirstCustomer = indexOfLastCustomer - customersPerPage;
+  const currentCustomers = customers.slice(
+    indexOfFirstCustomer,
+    indexOfLastCustomer
+  );
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
   const handleSave = async (e) => {
+    e.preventDefault();
+    const { name, address, mobileNumber } = customerDetails;
+    if (!name.trim() || !address.trim() || !mobileNumber) {
+      toast.error("All fields are required");
+      return;
+    }
+    const mobileRegex = /^\d{10}$/;
+    if (!mobileRegex.test(mobileNumber)) {
+      toast.error("Mobile number must be exactly 10 digits");
+      return;
+    }
     try {
-      e.preventDefault();
       const response = await axiosInstance.post(
         "/addcustomer",
         customerDetails
@@ -85,7 +111,7 @@ const Customers = () => {
             </tr>
           </thead>
           <tbody>
-            {customers.map((customer, index) => (
+            {currentCustomers.map((customer, index) => (
               <tr
                 key={customer._id}
                 className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
@@ -111,6 +137,11 @@ const Customers = () => {
             ))}
           </tbody>
         </table>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(customers.length / customersPerPage)}
+          onPageChange={handlePageChange}
+        />
       </div>
 
       {isModalOpen && (

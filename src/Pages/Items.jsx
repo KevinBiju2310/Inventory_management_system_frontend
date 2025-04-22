@@ -3,6 +3,9 @@ import Layout from "../Components/Layout";
 import axiosInstance from "../services/axiosInstance";
 import ConfirmationModal from "../Components/ConfirmationModal";
 import { Search } from "lucide-react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Pagination from "../Components/Pagination";
 
 const Items = () => {
   const [itemDetails, setItemDetails] = useState({
@@ -14,6 +17,8 @@ const Items = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [items, setItems] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -59,6 +64,16 @@ const Items = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    const { name, description, quantity, price } = itemDetails;
+    if (!name.trim() || !description.trim() || !quantity || !price) {
+      toast.error("All fields are required.");
+      return;
+    }
+
+    if (parseFloat(price) < 0 || parseInt(quantity) < 0) {
+      toast.error("Price and Quantity must be non-negative.");
+      return;
+    }
     try {
       const response = await axiosInstance.post("/additem", itemDetails);
       if (response.status == 201) {
@@ -77,6 +92,16 @@ const Items = () => {
   };
 
   const handleUpdate = async () => {
+    const { name, description, quantity, price } = itemToEdit;
+    if (!name || !description || !quantity || !price) {
+      toast.error("All fields are required.");
+      return;
+    }
+
+    if (parseFloat(price) < 0 || parseInt(quantity) < 0) {
+      toast.error("Price and Quantity must be non-negative.");
+      return;
+    }
     try {
       const response = await axiosInstance.put(`/edititem/${itemToEdit._id}`, {
         name: itemToEdit.name,
@@ -122,6 +147,14 @@ const Items = () => {
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const indexOfLastSale = currentPage * itemsPerPage;
+  const indexOfFirstSale = indexOfLastSale - itemsPerPage;
+  const currentItems = filteredItems.slice(indexOfFirstSale, indexOfLastSale);
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
   return (
     <Layout>
       <div className="flex items-center justify-between mb-4">
@@ -158,7 +191,7 @@ const Items = () => {
       </div>
 
       {/* Table to display items */}
-      {filteredItems.length === 0 ? (
+      {currentItems.length === 0 ? (
         <div className="text-center py-8">
           <div className="text-gray-500 text-lg mb-2">No items found</div>
           {searchTerm && (
@@ -188,7 +221,7 @@ const Items = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item, index) => (
+              {currentItems.map((item, index) => (
                 <tr
                   key={item._id}
                   className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
@@ -215,6 +248,11 @@ const Items = () => {
               ))}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredItems.length / itemsPerPage)}
+            onPageChange={handlePageChange}
+          />
         </div>
       )}
 
@@ -253,11 +291,17 @@ const Items = () => {
                 </label>
                 <input
                   type="number"
+                  min="1"
                   name="quantity"
                   value={itemDetails.quantity}
                   onChange={handleChange}
                   className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Enter quantity"
+                  onKeyDown={(e) => {
+                    if (e.key === "-" || e.key === "e") {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
               <div className="mb-4">
@@ -269,6 +313,11 @@ const Items = () => {
                   onChange={handleChange}
                   className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Enter price"
+                  onKeyDown={(e) => {
+                    if (e.key === "-" || e.key === "e") {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
               <div className="flex justify-end">
@@ -331,6 +380,11 @@ const Items = () => {
                   onChange={handleEditChange}
                   className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Enter quantity"
+                  onKeyDown={(e) => {
+                    if (e.key === "-" || e.key === "e") {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
               <div className="mb-4">
@@ -342,6 +396,11 @@ const Items = () => {
                   onChange={handleEditChange}
                   className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Enter price"
+                  onKeyDown={(e) => {
+                    if (e.key === "-" || e.key === "e") {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
               <div className="flex justify-end">
