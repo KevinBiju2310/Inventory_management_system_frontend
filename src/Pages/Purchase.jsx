@@ -1,111 +1,27 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import axiosInstance from "../services/axiosInstance";
 import Layout from "../Components/Layout";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { usePurchase } from "../Hooks/usePurchase";
 
 const Purchase = () => {
-  const [customers, setCustomers] = useState([]);
-  const [items, setItems] = useState([]);
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [selectedItems, setSelectedItems] = useState([]);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [customersResponse, itemsResponse] = await Promise.all([
-          axiosInstance.get("/customers"),
-          axiosInstance.get("/items"),
-        ]);
-
-        if (customersResponse.status === 200) {
-          setCustomers(customersResponse.data.customers);
-        }
-        if (itemsResponse.status === 200) {
-          setItems(itemsResponse.data.items);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("Error fetching data");
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const handleAddItem = (itemId) => {
-    const itemExists = selectedItems.find((item) => item.itemId === itemId);
-
-    if (!itemExists) {
-      const selectedItem = items.find((item) => item._id === itemId);
-      setSelectedItems([
-        ...selectedItems,
-        {
-          itemId,
-          name: selectedItem.name,
-          price: selectedItem.price,
-          quantity: 1,
-        },
-      ]);
-    }
-  };
-
-  // Handle quantity change
-  const handleQuantityChange = (itemId, newQuantity) => {
-    setSelectedItems(
-      selectedItems.map((item) =>
-        item.itemId === itemId ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  // Handle removing an item
-  const handleRemoveItem = (itemId) => {
-    setSelectedItems(selectedItems.filter((item) => item.itemId !== itemId));
-  };
-
-  // Calculate total price
-  const totalAmount = selectedItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
-
-  const handlePurchase = async () => {
-    if (!selectedCustomer || selectedItems.length === 0) {
-      toast.warn("Please select a customer and at least one item.");
-      return;
-    }
-    try {
-      const purchaseData = {
-        customerId: selectedCustomer,
-        items: selectedItems,
-        totalAmount,
-      };
-
-      const response = await axiosInstance.post("/sales", purchaseData);
-      if (response.status === 201) {
-        toast.success("Purchase successful!");
-        setSelectedCustomer("");
-        setSelectedItems([]);
-        navigate("/sales");
-      }
-    } catch (error) {
-      if (error.response) {
-        toast.error(
-          error.response.data.message || "Failed to complete purchase."
-        );
-      } else {
-        toast.error("An error occurred while processing your request.");
-      }
-    }
-  };
+  const {
+    customers,
+    items,
+    selectedCustomer,
+    selectedItems,
+    totalAmount,
+    loading,
+    setSelectedCustomer,
+    handleAddItem,
+    handleQuantityChange,
+    handleRemoveItem,
+    handlePurchase,
+  } = usePurchase();
 
   return (
     <Layout>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">New Purchase</h1>
+
+        {loading && <div className="text-center py-4">Loading data...</div>}
 
         {/* Customer Selection */}
         <div className="mb-4">
@@ -116,6 +32,7 @@ const Purchase = () => {
             value={selectedCustomer}
             onChange={(e) => setSelectedCustomer(e.target.value)}
             className="border border-gray-300 rounded p-2 w-full"
+            disabled={loading}
           >
             <option value="">Select a Customer</option>
             {customers.map((customer) => (
@@ -134,6 +51,7 @@ const Purchase = () => {
           <select
             onChange={(e) => handleAddItem(e.target.value)}
             className="border border-gray-300 rounded p-2 w-full"
+            disabled={loading}
           >
             <option value="">Choose an Item</option>
             {items.map((item) => (
@@ -186,6 +104,7 @@ const Purchase = () => {
                           }
                         }}
                         className="border border-gray-300 rounded p-1 w-16 text-center"
+                        disabled={loading}
                       />
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
@@ -195,6 +114,7 @@ const Purchase = () => {
                       <button
                         onClick={() => handleRemoveItem(item.itemId)}
                         className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                        disabled={loading}
                       >
                         Remove
                       </button>
@@ -214,10 +134,12 @@ const Purchase = () => {
         {/* Submit Button */}
         <button
           onClick={handlePurchase}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-4"
-          //   disabled={!selectedCustomer || selectedItems.length === 0}
+          className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-4 ${
+            loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          disabled={loading || !selectedCustomer || selectedItems.length === 0}
         >
-          Purchase
+          {loading ? "Processing..." : "Purchase"}
         </button>
       </div>
     </Layout>

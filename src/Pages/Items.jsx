@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Layout from "../Components/Layout";
-import axiosInstance from "../services/axiosInstance";
 import ConfirmationModal from "../Components/ConfirmationModal";
 import { Search } from "lucide-react";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+// import { toast } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
 import Pagination from "../Components/Pagination";
+import { useItems } from "../Hooks/useItems";
 
 const Items = () => {
   const [itemDetails, setItemDetails] = useState({
@@ -16,7 +16,7 @@ const Items = () => {
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [items, setItems] = useState([]);
+  // const [items, setItems] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,19 +24,7 @@ const Items = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [itemToEdit, setItemToEdit] = useState(null);
 
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const response = await axiosInstance.get("/items");
-        if (response.status == 200) {
-          setItems(response.data.items);
-        }
-      } catch (error) {
-        console.error("Error fetching items: ", error);
-      }
-    };
-    fetchItems();
-  }, []);
+  const { items, loading, addItem, updateItem, deleteItem } = useItems();
 
   const handleAddItem = () => {
     setIsModalOpen(true);
@@ -64,26 +52,16 @@ const Items = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const { name, description, quantity, price } = itemDetails;
-    if (!name.trim() || !description.trim() || !quantity || !price) {
-      toast.error("All fields are required.");
-      return;
+    const success = await addItem(itemDetails);
+    if (success) {
+      setItemDetails({
+        name: "",
+        description: "",
+        quantity: "",
+        price: "",
+      });
+      setIsModalOpen(false);
     }
-
-    if (parseFloat(price) < 0 || parseInt(quantity) < 0) {
-      toast.error("Price and Quantity must be non-negative.");
-      return;
-    }
-    try {
-      const response = await axiosInstance.post("/additem", itemDetails);
-      if (response.status == 201) {
-        console.log("created Successfully");
-        setItems((prevItems) => [...prevItems, response.data.newItem]);
-      }
-    } catch (error) {
-      console.error("Error occurred", error);
-    }
-    setIsModalOpen(false);
   };
 
   const openConfirmModal = (itemId) => {
@@ -92,51 +70,19 @@ const Items = () => {
   };
 
   const handleUpdate = async () => {
-    const { name, description, quantity, price } = itemToEdit;
-    if (!name || !description || !quantity || !price) {
-      toast.error("All fields are required.");
-      return;
-    }
-
-    if (parseFloat(price) < 0 || parseInt(quantity) < 0) {
-      toast.error("Price and Quantity must be non-negative.");
-      return;
-    }
-    try {
-      const response = await axiosInstance.put(`/edititem/${itemToEdit._id}`, {
-        name: itemToEdit.name,
-        description: itemToEdit.description,
-        quantity: itemToEdit.quantity,
-        price: itemToEdit.price,
-      });
-      if (response.status === 200) {
-        setItems((prevItems) =>
-          prevItems.map((item) =>
-            item._id === itemToEdit._id ? { ...item, ...itemToEdit } : item
-          )
-        );
-        setIsEditModalOpen(false);
-        setItemToEdit(null);
-      }
-    } catch (error) {
-      console.log("Error Occured: ", error);
+    const success = await updateItem(itemToEdit._id, itemToEdit);
+    if (success) {
+      setIsEditModalOpen(false);
+      setItemToEdit(null);
     }
   };
 
   const handleDelete = async () => {
-    try {
-      const response = await axiosInstance.delete(
-        `/deleteitem/${itemToDelete}`
-      );
-      if (response.status === 200) {
-        console.log("Deleted successfully");
-        setItems(items.filter((item) => item._id !== itemToDelete));
-      }
-    } catch (error) {
-      console.error("Error deleting item", error);
+    const success = await deleteItem(itemToDelete);
+    if (success) {
+      setIsConfirmModalOpen(false);
+      setItemToDelete(null);
     }
-    setIsConfirmModalOpen(false);
-    setItemToDelete(null);
   };
 
   const clearSearch = () => {
@@ -190,8 +136,9 @@ const Items = () => {
         </div>
       </div>
 
-      {/* Table to display items */}
-      {currentItems.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-4">Loading items...</div>
+      ) : currentItems.length === 0 ? (
         <div className="text-center py-8">
           <div className="text-gray-500 text-lg mb-2">No items found</div>
           {searchTerm && (

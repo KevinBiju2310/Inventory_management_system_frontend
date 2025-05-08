@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Layout from "../Components/Layout";
-import axiosInstance from "../services/axiosInstance";
 import Pagination from "../Components/Pagination";
+import { useCustomers } from "../Hooks/useCustomers";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -11,20 +11,12 @@ const Customers = () => {
     address: "",
     mobileNumber: "",
   });
-  const [customers, setCustomers] = useState([]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const customersPerPage = 10;
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      const response = await axiosInstance.get("/customers");
-      if (response.status == 200) {
-        setCustomers(response.data.customers);
-      }
-    };
-    fetchCustomers();
-  }, []);
+  const { customers, loading, addCustomer } = useCustomers();
 
   const handleAddCustomers = () => {
     setIsModalOpen(true);
@@ -52,32 +44,16 @@ const Customers = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const { name, address, mobileNumber } = customerDetails;
-    if (!name.trim() || !address.trim() || !mobileNumber) {
-      toast.error("All fields are required");
-      return;
+    const success = await addCustomer(customerDetails);
+    if (success) {
+      setCustomerDetails({
+        name: "",
+        address: "",
+        mobileNumber: "",
+      });
+      setIsModalOpen(false);
+      toast.success("Customer added successfully");
     }
-    const mobileRegex = /^\d{10}$/;
-    if (!mobileRegex.test(mobileNumber)) {
-      toast.error("Mobile number must be exactly 10 digits");
-      return;
-    }
-    try {
-      const response = await axiosInstance.post(
-        "/addcustomer",
-        customerDetails
-      );
-      if (response.status == 201) {
-        console.log(response.data.message);
-        setCustomers((prevCustomers) => [
-          ...prevCustomers,
-          response.data.newCustomer,
-        ]);
-      }
-    } catch (error) {
-      console.error("Error Occured: ", error);
-    }
-    setIsModalOpen(false);
   };
 
   return (
@@ -93,50 +69,39 @@ const Customers = () => {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full table-auto border-collapse border border-gray-300">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-4 py-2 text-left font-medium text-gray-700">
-                Index
-              </th>
-              <th className="border px-4 py-2 text-left font-medium text-gray-700">
-                Name
-              </th>
-              <th className="border px-4 py-2 text-left font-medium text-gray-700">
-                Mobile Number
-              </th>
-              {/* <th className="border px-4 py-2 text-left font-medium text-gray-700">
-                Action
-              </th> */}
-            </tr>
-          </thead>
-          <tbody>
-            {currentCustomers.map((customer, index) => (
-              <tr
-                key={customer._id}
-                className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-              >
-                <td className="border px-4 py-2">{index + 1}</td>
-                <td className="border px-4 py-2">{customer.name}</td>
-                <td className="border px-4 py-2">{customer.mobileNumber}</td>
-                {/* <td className="border px-4 py-2">
-                  <button
-                    // onClick={() => handleEditItem(item)}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 mr-2"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    // onClick={() => openConfirmModal(item._id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </td> */}
+        {loading ? (
+          <div className="text-center py-4">Loading customers...</div>
+        ) : (
+          <table className="min-w-full table-auto border-collapse border border-gray-300">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-4 py-2 text-left font-medium text-gray-700">
+                  Index
+                </th>
+                <th className="border px-4 py-2 text-left font-medium text-gray-700">
+                  Name
+                </th>
+                <th className="border px-4 py-2 text-left font-medium text-gray-700">
+                  Mobile Number
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {currentCustomers.map((customer, index) => (
+                <tr
+                  key={customer._id}
+                  className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
+                  <td className="border px-4 py-2">
+                    {indexOfFirstCustomer + index + 1}
+                  </td>
+                  <td className="border px-4 py-2">{customer.name}</td>
+                  <td className="border px-4 py-2">{customer.mobileNumber}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
         <Pagination
           currentPage={currentPage}
           totalPages={Math.ceil(customers.length / customersPerPage)}

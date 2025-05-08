@@ -1,30 +1,16 @@
 import Layout from "../Components/Layout";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "../services/axiosInstance";
+import { useSales } from "../Hooks/useSales";
 import Pagination from "../Components/Pagination";
 
 const Sales = () => {
-  const [sales, setSales] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [salesPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
-  const fetchSales = async () => {
-    try {
-      const response = await axiosInstance.get("/sales");
-      if (response.status == 200) {
-        setSales(response.data.sales);
-      }
-    } catch (error) {
-      console.error("Error occured:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchSales();
-  }, []);
+  const { sales, loading } = useSales();
 
   const filteredSales = sales.filter((sale) => {
     const customerName = sale.customer
@@ -70,7 +56,9 @@ const Sales = () => {
       </div>
 
       <h2 className="text-xl font-bold mt-6 mb-4">Sales List</h2>
-      {currentSales.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-4">Loading customers...</div>
+      ) : currentSales.length === 0 ? (
         <p>No sales available</p>
       ) : (
         <div className="overflow-x-auto">

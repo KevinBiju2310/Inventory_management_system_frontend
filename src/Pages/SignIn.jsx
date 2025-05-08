@@ -1,54 +1,30 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Boxes, Mail, Lock, ArrowRight } from "lucide-react";
-import { useDispatch } from "react-redux";
-import { setUser } from "../Redux/userSlice";
-import axiosInstance from "../services/axiosInstance";
+import { useAuth } from "../Hooks/useAuth";
 
 const SignIn = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const { error, handleSubmit } = useAuth();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSignin = async (e) => {
     e.preventDefault();
-    const { email, password } = formData;
-    if (!email || !password) {
-      setError("All fields are required");
-      return;
-    }
-    try {
-      const response = await axiosInstance.post("/signin", {
-        email,
-        password,
+    const response = await handleSubmit(formData);
+    if (response == 200) {
+      navigate("/items");
+      setFormData({
+        email: "",
+        password: "",
       });
-      if (response.status == 200) {
-        dispatch(setUser(response.data.user));
-        navigate("/items");
-      }
-    } catch (error) {
-      if (error.response) {
-        // Handle server-side errors
-        if (error.response.status === 401) {
-          setError("Password is incorrect");
-        } else if (error.response.status === 404) {
-          setError("User not found");
-        } else {
-          setError("Something went wrong. Please try again later.");
-        }
-      } else {
-        // Handle client-side or network errors
-        setError("Network error. Please check your connection.");
-      }
     }
   };
 
@@ -68,7 +44,7 @@ const SignIn = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSignin}>
             <div>
               <label
                 htmlFor="email"
